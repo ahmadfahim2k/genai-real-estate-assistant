@@ -9,6 +9,31 @@ from messages import (
     EMBEDDED_ARTICLES_HEADER,
 )
 
+st.markdown(
+    """
+    <style>
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem;
+        padding-bottom: 0;
+    }
+    [data-testid="stSidebarUserContent"] {
+        padding-bottom: 1rem;
+    }
+    [data-testid="stForm"] {
+        border: none;
+        padding: 0;
+    }
+    .block-container {
+        padding-top: 2rem;
+    }
+    [data-testid="stSidebarContent"] {
+        overflow: auto;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 st.title("Real Estate Research Tool")
 
 scrape_button = st.sidebar.button("Scrape CNBC Real Estate", use_container_width=True)
@@ -58,11 +83,12 @@ if scrape_button:
     except RuntimeError as e:
         placeholder.text(str(e))
 
-col1, col2 = st.columns([5, 1], vertical_alignment="bottom")
-with col1:
-    query = st.text_input("Question", placeholder="Summarize the latest real estate trends...")
-with col2:
-    ask_button = st.button("Query")
+with st.form("query_form"):
+    col1, col2 = st.columns([5, 1], vertical_alignment="bottom")
+    with col1:
+        query = st.text_input("Question", placeholder="Summarize the latest real estate trends...")
+    with col2:
+        ask_button = st.form_submit_button("Query")
 
 if st.session_state.embedded_urls:
     st.subheader(st.session_state.embedded_urls_header)
