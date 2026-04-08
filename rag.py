@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -10,6 +11,18 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 
 from chains import RetrievalQAWithSourcesChain
+from messages import (
+    INITIALIZING_COMPONENTS,
+    RESETTING_VECTOR_STORE,
+    LOADING_DATA,
+    CHUNKING_DOCUMENTS,
+    ADDING_TO_VECTOR_STORE,
+    DONE_ADDING_DOCS,
+    ERROR_VECTOR_DB_EMPTY,
+    ERROR_LOADING_URLS,
+    ERROR_PROCESSING_URLS,
+    ERROR_GENERATING_ANSWER,
+)
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -33,6 +46,9 @@ vector_store = None
 
 # --------------------------------------------
 
+def _is_streamlit_cloud():
+    return os.environ.get("STREAMLIT_SHARING_MODE") == "streamlit_sharing"
+
 def initialize_components():
     
     global llm, vector_store
@@ -46,10 +62,11 @@ def initialize_components():
             encode_kwargs={"normalize_embeddings": True, "batch_size": 4},
         )
         
+        persist_dir = str(VECTORSTORE_DIR) if VECTORSTORE_DIR.exists() or not _is_streamlit_cloud() else None
         vector_store = Chroma(
             collection_name=COLLECTION_NAME,
             embedding_function=ef,
-            persist_directory=str(VECTORSTORE_DIR)
+            persist_directory=persist_dir,
         )
 
 def process_urls(urls):
@@ -59,17 +76,21 @@ def process_urls(urls):
     :return:
     """
     
-    yield "Initialize components"
+    yield INITIALIZING_COMPONENTS
     initialize_components()
-    
-    yield "Resetting vector store"
+
+    yield RESETTING_VECTOR_STORE
     vector_store.reset_collection()
-    
-    yield "Loading Data"
-    loader = WebBaseLoader(urls)
-    data = loader.load()    
-    
-    yield "Chunking documents"
+
+    yield LOADING_DATA
+    try:
+        loader = WebBaseLoader(urls)
+        data = loader.load()
+    except Exception as e:
+        yield ERROR_LOADING_URLS
+        raise RuntimeError(ERROR_LOADING_URLS) from e
+
+    yield CHUNKING_DOCUMENTS
     text_splitter = RecursiveCharacterTextSplitter(
         separators=["\n\n", "\n", " "],
         chunk_size=CHUNK_SIZE,
@@ -77,22 +98,29 @@ def process_urls(urls):
     )
 
     docs = text_splitter.split_documents(data)
-    
-    yield "Adding documents to vector store"
-    uuids = [str(uuid4()) for _ in range(len(docs))]
-    vector_store.add_documents(docs, ids=uuids)
-    
-    yield "Done adding docs to vector store"
+
+    yield ADDING_TO_VECTOR_STORE
+    try:
+        uuids = [str(uuid4()) for _ in range(len(docs))]
+        vector_store.add_documents(docs, ids=uuids)
+    except Exception as e:
+        yield ERROR_PROCESSING_URLS
+        raise RuntimeError(ERROR_PROCESSING_URLS) from e
+
+    yield DONE_ADDING_DOCS
 
 def generate_answer(query):
-    if not vector_store:
-        raise RuntimeError("Vector DB is not initialized")
     initialize_components()
-    chain = RetrievalQAWithSourcesChain(llm, vector_store)
-    result = chain.invoke(query)
-    answer = result["answer"]
-    sources = result["sources"]
-    return (answer, sources)
+    if vector_store.get()["ids"] == []:
+        raise RuntimeError(ERROR_VECTOR_DB_EMPTY)
+    try:
+        chain = RetrievalQAWithSourcesChain(llm, vector_store)
+        result = chain.invoke(query)
+        answer = result["answer"]
+        sources = result["sources"]
+        return (answer, sources)
+    except Exception as e:
+        raise RuntimeError(ERROR_GENERATING_ANSWER) from e
 
 if __name__ == "__main__":
     urls = [
