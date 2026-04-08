@@ -6,6 +6,7 @@ from messages import (
     ERROR_SCRAPING_NO_ARTICLES,
     SCRAPING_CNBC,
     SCRAPED_ARTICLES_HEADER,
+    EMBEDDED_ARTICLES_HEADER,
 )
 
 st.title("Real Estate Research Tool")
@@ -28,8 +29,10 @@ process_url_button = st.sidebar.button("Process URLs", use_container_width=True)
 
 placeholder = st.empty()
 
-if "scraped_urls" not in st.session_state:
-    st.session_state.scraped_urls = []
+if "embedded_urls" not in st.session_state:
+    st.session_state.embedded_urls = []
+if "embedded_urls_header" not in st.session_state:
+    st.session_state.embedded_urls_header = ""
 
 if process_url_button:
     urls = [url for url in (url1, url2, url3, url4, url5) if url != '']
@@ -38,6 +41,8 @@ if process_url_button:
     else:
         for status in process_urls(urls):
             placeholder.text(status)
+        st.session_state.embedded_urls = urls
+        st.session_state.embedded_urls_header = EMBEDDED_ARTICLES_HEADER
 
 if scrape_button:
     try:
@@ -46,21 +51,22 @@ if scrape_button:
         if not scraped_urls:
             placeholder.text(ERROR_SCRAPING_NO_ARTICLES)
         else:
-            st.session_state.scraped_urls = scraped_urls
             for status in process_urls(scraped_urls):
                 placeholder.text(status)
+            st.session_state.embedded_urls = scraped_urls
+            st.session_state.embedded_urls_header = SCRAPED_ARTICLES_HEADER
     except RuntimeError as e:
         placeholder.text(str(e))
 
 col1, col2 = st.columns([5, 1], vertical_alignment="bottom")
 with col1:
-    query = st.text_input("Question")
+    query = st.text_input("Question", placeholder="Summarize the latest real estate trends...")
 with col2:
     ask_button = st.button("Query")
 
-if st.session_state.scraped_urls:
-    st.subheader(SCRAPED_ARTICLES_HEADER)
-    for url in st.session_state.scraped_urls:
+if st.session_state.embedded_urls:
+    st.subheader(st.session_state.embedded_urls_header)
+    for url in st.session_state.embedded_urls:
         st.markdown(f"- {url}")
 
 if ask_button and query:

@@ -7,6 +7,7 @@ DONE_ADDING_DOCS = "✅ Done adding docs to vector store!"
 
 SCRAPING_CNBC = "🔍 Scraping CNBC Real Estate articles..."
 SCRAPED_ARTICLES_HEADER = "📰 Scraped Articles:"
+EMBEDDED_ARTICLES_HEADER = "📎 Embedded Articles:"
 
 # Errors
 ERROR_NO_URLS = "⚠️ You must provide at least 1 valid URL."
