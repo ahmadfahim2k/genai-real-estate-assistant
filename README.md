@@ -2,7 +2,7 @@
 
 An AI-powered research tool for querying real estate and finance articles. Scrape the latest CNBC Real Estate articles or provide your own URLs, then ask questions answered with source citations.
 
-**Live App:** [View on Streamlit Cloud](#)
+**Live App:** [View on Streamlit Cloud](https://genai-real-estate-assistant-akha5ab4it59rgi9r74yjk.streamlit.app/)
 
 ## Screenshots
 
