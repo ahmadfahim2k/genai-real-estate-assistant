@@ -66,7 +66,3 @@ An AI-powered research tool for querying real estate and finance articles. Scrap
 1. In the sidebar, click **Scrape CNBC Real Estate** to auto-load the latest articles, or paste up to 5 custom URLs and click **Process URLs**
 2. Wait for the documents to be embedded into the vector store
 3. Type a question and click **Query**
-
-## Deployment (Streamlit Cloud)
-
-The vector store uses in-memory mode on Streamlit Cloud (since the filesystem is ephemeral), so you will need to re-process URLs on each session. Locally, embeddings persist in `resources/vectorstore/`.
